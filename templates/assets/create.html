@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Ativo{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'assets:list' %}" class="text-decoration-none">Inventário</a></li>
+<li class="breadcrumb-item active">{{ action }} Ativo</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <div class="stat-icon" style="background:#eff6ff">
+    <i class="bi bi-{% if asset %}pencil{% else %}plus-circle{% endif %} text-primary fs-4"></i>
+  </div>
+  <div>
+    <h1 class="page-title mb-0">{{ action }} Ativo de TI</h1>
+    <p class="text-muted small mb-0">Preencha as informações do equipamento</p>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-card-text me-2"></i>Identificação</div>
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold small">{{ form.name.label }} <span class="text-danger">*</span></label>
+            {{ form.name }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.asset_type.label }}</label>
+            {{ form.asset_type }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.brand.label }}</label>
+            {{ form.brand }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.model_name.label }}</label>
+            {{ form.model_name }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.asset_tag.label }}</label>
+            {{ form.asset_tag }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">{{ form.serial_number.label }} <span class="text-danger">*</span></label>
+            {{ form.serial_number }}
+            {% if form.serial_number.errors %}
+              <div class="invalid-feedback d-block">{{ form.serial_number.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold small">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold small">{{ form.condition.label }}</label>
+            {{ form.condition }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-cpu me-2"></i>Especificações Técnicas</div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">{{ form.operating_system.label }}</label>
+            {{ form.operating_system }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">{{ form.processor.label }}</label>
+            {{ form.processor }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.ram.label }}</label>
+            {{ form.ram }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.storage.label }}</label>
+            {{ form.storage }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.ip_address.label }}</label>
+            {{ form.ip_address }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold small">{{ form.mac_address.label }}</label>
+            {{ form.mac_address }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-receipt me-2"></i>Aquisição</div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.purchase_date.label }}</label>
+            {{ form.purchase_date }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.warranty_until.label }}</label>
+            {{ form.warranty_until }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small">{{ form.purchase_value.label }}</label>
+            {{ form.purchase_value }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small">{{ form.supplier.label }}</label>
+            {{ form.supplier }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-geo-alt me-2"></i>Localização e Responsável</div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ form.location.label }}</label>
+          {{ form.location }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ form.assigned_to.label }}</label>
+          {{ form.assigned_to }}
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-journal-text me-2"></i>Observações</div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-floppy me-2"></i>{{ action }} Ativo
+        </button>
+        <a href="{% url 'assets:list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

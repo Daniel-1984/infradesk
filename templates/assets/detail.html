@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% block title %}{{ asset.name }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'assets:list' %}" class="text-decoration-none">Inventário</a></li>
+<li class="breadcrumb-item active">{{ asset.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- MAIN COLUMN -->
+  <div class="col-lg-8">
+    <!-- ASSET HEADER -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="asset-type-icon" style="background:#eff6ff;width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center">
+              <i class="bi {{ asset.get_type_icon }} text-primary fs-2"></i>
+            </div>
+            <div>
+              <h2 class="fs-4 fw-bold mb-1">{{ asset.name }}</h2>
+              <p class="text-muted mb-1">{{ asset.brand }} {{ asset.model_name }}</p>
+              <div class="d-flex gap-2">
+                <span class="badge bg-{{ asset.get_status_badge }}-subtle text-{{ asset.get_status_badge }} border px-3 py-2">
+                  {{ asset.get_status_display }}
+                </span>
+                <span class="badge bg-light text-dark border px-3 py-2">
+                  {{ asset.get_asset_type_display }}
+                </span>
+              </div>
+            </div>
+          </div>
+          {% if is_technician %}
+          <a href="{% url 'assets:edit' asset.pk %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Editar
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- SPECS -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-cpu me-2 text-primary"></i>Especificações Técnicas</h6>
+        <div class="row g-0">
+          {% if asset.operating_system %}
+          <div class="col-md-6 py-2 px-3 border-bottom">
+            <div class="small text-muted">Sistema Operacional</div>
+            <div class="fw-semibold">{{ asset.operating_system }}</div>
+          </div>
+          {% endif %}
+          {% if asset.processor %}
+          <div class="col-md-6 py-2 px-3 border-bottom">
+            <div class="small text-muted">Processador</div>
+            <div class="fw-semibold">{{ asset.processor }}</div>
+          </div>
+          {% endif %}
+          {% if asset.ram %}
+          <div class="col-md-6 py-2 px-3 border-bottom">
+            <div class="small text-muted">Memória RAM</div>
+            <div class="fw-semibold">{{ asset.ram }}</div>
+          </div>
+          {% endif %}
+          {% if asset.storage %}
+          <div class="col-md-6 py-2 px-3 border-bottom">
+            <div class="small text-muted">Armazenamento</div>
+            <div class="fw-semibold">{{ asset.storage }}</div>
+          </div>
+          {% endif %}
+          {% if asset.ip_address %}
+          <div class="col-md-6 py-2 px-3 border-bottom">
+            <div class="small text-muted">Endereço IP</div>
+            <div class="fw-semibold font-monospace">{{ asset.ip_address }}</div>
+          </div>
+          {% endif %}
+          {% if asset.mac_address %}
+          <div class="col-md-6 py-2 px-3 border-bottom">
+            <div class="small text-muted">MAC Address</div>
+            <div class="fw-semibold font-monospace">{{ asset.mac_address }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% if not asset.operating_system and not asset.processor %}
+          <p class="text-muted small mb-0">Nenhuma especificação técnica cadastrada.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-bold mb-0"><i class="bi bi-tools me-2 text-warning"></i>Histórico de Manutenção</h6>
+        </div>
+
+        {% if maintenance_records %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th>Técnico</th>
+                <th>Agendado</th>
+                <th>Concluído</th>
+                <th>Custo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in maintenance_records %}
+              <tr>
+                <td class="small fw-semibold">{{ m.get_maintenance_type_display }}</td>
+                <td>
+                  <span class="badge {% if m.status == 'completed' %}bg-success-subtle text-success{% elif m.status == 'in_progress' %}bg-warning-subtle text-warning{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                    {{ m.get_status_display }}
+                  </span>
+                </td>
+                <td class="small">{{ m.technician.get_full_name|default:m.technician.username|default:"—" }}</td>
+                <td class="small">{{ m.scheduled_date|date:"d/m/Y"|default:"—" }}</td>
+                <td class="small">{{ m.completed_date|date:"d/m/Y"|default:"—" }}</td>
+                <td class="small">{% if m.cost %}R$ {{ m.cost|floatformat:2 }}{% else %}—{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state py-3">
+            <i class="bi bi-tools" style="font-size:2rem"></i>
+            <p class="small">Nenhum registro de manutenção</p>
+          </div>
+        {% endif %}
+
+        {% if is_technician %}
+        <div class="border-top pt-3 mt-3">
+          <h6 class="fw-semibold small mb-3">Registrar Manutenção</h6>
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-2">
+              <div class="col-md-4">
+                <label class="form-label small">{{ maintenance_form.maintenance_type.label }}</label>
+                {{ maintenance_form.maintenance_type }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">{{ maintenance_form.status.label }}</label>
+                {{ maintenance_form.status }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">{{ maintenance_form.technician.label }}</label>
+                {{ maintenance_form.technician }}
+              </div>
+              <div class="col-12">
+                <label class="form-label small">{{ maintenance_form.description.label }}</label>
+                {{ maintenance_form.description }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">{{ maintenance_form.scheduled_date.label }}</label>
+                {{ maintenance_form.scheduled_date }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">{{ maintenance_form.completed_date.label }}</label>
+                {{ maintenance_form.completed_date }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">{{ maintenance_form.cost.label }}</label>
+                {{ maintenance_form.cost }}
+              </div>
+            </div>
+            <button type="submit" class="btn btn-warning btn-sm mt-3">
+              <i class="bi bi-tools me-2"></i>Registrar Manutenção
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- OPEN TICKETS -->
+    {% if open_tickets %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-ticket-detailed me-2 text-danger"></i>Chamados Abertos</h6>
+        {% for ticket in open_tickets %}
+        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+          <div>
+            <a href="{% url 'tickets:detail' ticket.pk %}" class="text-decoration-none fw-semibold small">
+              #{{ ticket.pk }} — {{ ticket.title|truncatechars:40 }}
+            </a>
+          </div>
+          <span class="badge badge-priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Identificação</h6>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Nº de Série</span>
+          <span class="small font-monospace fw-semibold">{{ asset.serial_number }}</span>
+        </div>
+        {% if asset.asset_tag %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Patrimônio</span>
+          <span class="small fw-semibold">{{ asset.asset_tag }}</span>
+        </div>
+        {% endif %}
+        {% if asset.location %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Localização</span>
+          <span class="small">{{ asset.location }}</span>
+        </div>
+        {% endif %}
+        {% if asset.assigned_to %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Responsável</span>
+          <span class="small">{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}</span>
+        </div>
+        {% endif %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Estado</span>
+          <span class="small">{{ asset.get_condition_display }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Aquisição</h6>
+        {% if asset.purchase_date %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Compra</span>
+          <span class="small">{{ asset.purchase_date|date:"d/m/Y" }}</span>
+        </div>
+        {% endif %}
+        {% if asset.warranty_until %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Garantia até</span>
+          <span class="small {% if not asset.is_warranty_valid %}text-danger{% elif asset.is_warranty_expiring_soon %}text-warning{% else %}text-success{% endif %} fw-semibold">
+            {{ asset.warranty_until|date:"d/m/Y" }}
+          </span>
+        </div>
+        {% endif %}
+        {% if asset.purchase_value %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Valor</span>
+          <span class="small fw-semibold">R$ {{ asset.purchase_value|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if asset.supplier %}
+        <div class="d-flex justify-content-between py-2">
+          <span class="small text-muted">Fornecedor</span>
+          <span class="small">{{ asset.supplier }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Ações</h6>
+        <div class="d-grid gap-2">
+          {% if is_technician %}
+          <a href="{% url 'assets:edit' asset.pk %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil me-2"></i>Editar Ativo
+          </a>
+          {% endif %}
+          <a href="{% url 'tickets:create' %}?asset={{ asset.pk }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-ticket me-2"></i>Abrir Chamado
+          </a>
+          <a href="{% url 'assets:list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

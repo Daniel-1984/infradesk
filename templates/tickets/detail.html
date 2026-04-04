@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% block title %}Chamado #{{ ticket.pk }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'tickets:list' %}" class="text-decoration-none">Chamados</a></li>
+<li class="breadcrumb-item active">#{{ ticket.pk }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- MAIN COLUMN -->
+  <div class="col-lg-8">
+    <!-- TICKET HEADER -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div>
+            <span class="text-muted small fw-semibold">#{{ ticket.pk }} &mdash; {{ ticket.get_category_display }}</span>
+            <h2 class="fs-4 fw-bold mt-1 mb-2">{{ ticket.title }}</h2>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge badge-priority-{{ ticket.priority }} px-3 py-2">
+                <i class="bi bi-flag me-1"></i>{{ ticket.get_priority_display }}
+              </span>
+              <span class="badge bg-{{ ticket.get_status_badge }}-subtle text-{{ ticket.get_status_badge }} border px-3 py-2">
+                {{ ticket.get_status_display }}
+              </span>
+              {% if ticket.is_overdue %}
+              <span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-alarm me-1"></i>Atrasado
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          {% if is_technician or ticket.created_by == request.user %}
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+              {% if ticket.status not in 'closed resolved' %}
+              <li>
+                <a class="dropdown-item text-danger" href="{% url 'tickets:close' ticket.pk %}"
+                   data-confirm="Confirma o encerramento deste chamado?">
+                  <i class="bi bi-x-circle me-2"></i>Encerrar Chamado
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="mt-3 p-3 bg-light rounded-3">
+          <p class="mb-0" style="white-space:pre-line">{{ ticket.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL (Technician only) -->
+    {% if is_technician %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-sliders me-2 text-primary"></i>Gestão do Chamado</h6>
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">{{ admin_form.status.label }}</label>
+              {{ admin_form.status }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">{{ admin_form.priority.label }}</label>
+              {{ admin_form.priority }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">{{ admin_form.assigned_to.label }}</label>
+              {{ admin_form.assigned_to }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">{{ admin_form.asset.label }}</label>
+              {{ admin_form.asset }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">{{ admin_form.due_date.label }}</label>
+              {{ admin_form.due_date }}
+            </div>
+          </div>
+          <div class="mt-3">
+            <button type="submit" name="submit_admin" class="btn btn-primary btn-sm">
+              <i class="bi bi-floppy me-2"></i>Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- COMMENTS -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text me-2"></i>Histórico do Chamado</h6>
+
+        {% if comments %}
+          <div class="d-flex flex-column gap-3 mb-4">
+            {% for comment in comments %}
+            <div class="comment-item {% if comment.is_internal %}internal{% else %}public{% endif %}">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center"
+                     style="width:28px;height:28px;font-size:10px;background:linear-gradient(135deg,#4f8ef7,#7b5ce5);color:white;font-weight:700;flex-shrink:0">
+                  {{ comment.author.first_name|first|upper }}{{ comment.author.last_name|first|upper }}
+                </div>
+                <span class="fw-semibold small">{{ comment.author.get_full_name|default:comment.author.username }}</span>
+                <span class="text-muted small">{{ comment.created_at|date:"d/m/Y \à\s H:i" }}</span>
+                {% if comment.is_internal %}
+                  <span class="badge bg-warning-subtle text-warning border ms-auto" style="font-size:10px">
+                    <i class="bi bi-lock me-1"></i>Nota Interna
+                  </span>
+                {% endif %}
+              </div>
+              <p class="mb-0 small" style="white-space:pre-line">{{ comment.content }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted text-center py-3 small">
+            <i class="bi bi-chat-left d-block fs-3 mb-2 opacity-50"></i>
+            Nenhum comentário ainda. Seja o primeiro a interagir!
+          </div>
+        {% endif %}
+
+        <!-- ADD COMMENT -->
+        {% if ticket.status != 'closed' %}
+        <form method="post" class="border-top pt-3">
+          {% csrf_token %}
+          <label class="form-label small fw-semibold">Adicionar Resposta</label>
+          {{ comment_form.content }}
+          {% if is_technician %}
+          <div class="form-check mt-2 mb-3">
+            {{ comment_form.is_internal }}
+            <label class="form-check-label small">{{ comment_form.is_internal.label }}</label>
+          </div>
+          {% endif %}
+          <button type="submit" name="submit_comment" class="btn btn-primary btn-sm mt-2">
+            <i class="bi bi-send me-2"></i>Enviar
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR COLUMN -->
+  <div class="col-lg-4">
+    <!-- INFO CARD -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Informações</h6>
+
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Solicitante</span>
+          <span class="small fw-semibold">{{ ticket.created_by.get_full_name|default:ticket.created_by.username }}</span>
+        </div>
+        {% if ticket.assigned_to %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Atribuído a</span>
+          <span class="small fw-semibold">{{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}</span>
+        </div>
+        {% endif %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Aberto em</span>
+          <span class="small">{{ ticket.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Atualizado em</span>
+          <span class="small">{{ ticket.updated_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% if ticket.due_date %}
+        <div class="d-flex justify-content-between py-2 border-bottom">
+          <span class="small text-muted">Prazo</span>
+          <span class="small {% if ticket.is_overdue %}text-danger fw-bold{% endif %}">
+            {{ ticket.due_date|date:"d/m/Y" }}
+          </span>
+        </div>
+        {% endif %}
+        {% if ticket.resolved_at %}
+        <div class="d-flex justify-content-between py-2">
+          <span class="small text-muted">Resolvido em</span>
+          <span class="small text-success">{{ ticket.resolved_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ASSET CARD -->
+    {% if ticket.asset %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-laptop me-2"></i>Equipamento Relacionado</h6>
+        <a href="{% url 'assets:detail' ticket.asset.pk %}" class="text-decoration-none">
+          <div class="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg" style="background:#f8fafc">
+            <div class="asset-type-icon" style="width:42px;height:42px;border-radius:10px;background:#eff6ff;font-size:18px;display:flex;align-items:center;justify-content:center">
+              <i class="bi {{ ticket.asset.get_type_icon }} text-primary"></i>
+            </div>
+            <div>
+              <div class="fw-semibold small">{{ ticket.asset.name }}</div>
+              <div class="text-muted" style="font-size:11px">{{ ticket.asset.brand }} {{ ticket.asset.model_name }}</div>
+              <span class="badge bg-{{ ticket.asset.get_status_badge }}-subtle text-{{ ticket.asset.get_status_badge }}" style="font-size:10px">
+                {{ ticket.asset.get_status_display }}
+              </span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- QUICK ACTIONS -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Ações</h6>
+        <div class="d-grid gap-2">
+          <a href="{% url 'tickets:list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-2"></i>Voltar para lista
+          </a>
+          {% if ticket.status != 'closed' %}
+          <a href="{% url 'tickets:close' ticket.pk %}" class="btn btn-outline-danger btn-sm"
+             data-confirm="Confirma o encerramento deste chamado?">
+            <i class="bi bi-x-circle me-2"></i>Encerrar Chamado
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

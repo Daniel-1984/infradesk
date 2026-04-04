@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block public_content %}
+<div class="login-wrapper">
+  <div class="login-card" style="max-width:480px">
+    <div class="text-center mb-4">
+      <div class="d-inline-flex align-items-center justify-content-center rounded-3 mb-3"
+           style="width:60px;height:60px;background:linear-gradient(135deg,#4f8ef7,#7b5ce5)">
+        <i class="bi bi-person-plus-fill fs-3 text-white"></i>
+      </div>
+      <h4 class="text-white fw-bold mb-1">Criar Conta</h4>
+      <p class="text-secondary small">InfraDesk — Sistema de Suporte</p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label text-light small fw-semibold">Nome</label>
+          {{ form.first_name }}
+        </div>
+        <div class="col-6">
+          <label class="form-label text-light small fw-semibold">Sobrenome</label>
+          {{ form.last_name }}
+        </div>
+        <div class="col-12">
+          <label class="form-label text-light small fw-semibold">Nome de Usuário</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="invalid-feedback d-block text-danger" style="font-size:12px">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label text-light small fw-semibold">E-mail</label>
+          {{ form.email }}
+        </div>
+        <div class="col-6">
+          <label class="form-label text-light small fw-semibold">Senha</label>
+          {{ form.password1 }}
+        </div>
+        <div class="col-6">
+          <label class="form-label text-light small fw-semibold">Confirmar Senha</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+            <div class="invalid-feedback d-block text-danger" style="font-size:12px">{{ form.password2.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+            <i class="bi bi-person-check me-2"></i>Criar Conta
+          </button>
+        </div>
+      </div>
+    </form>
+    <div class="text-center mt-3">
+      <a href="{% url 'accounts:login' %}" class="text-secondary small text-decoration-none">
+        Já tem conta? <span class="text-primary">Fazer login</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- HEADER -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h1 class="page-title mb-1">Dashboard</h1>
+    <p class="text-muted small mb-0">
+      {% load tz %}{% now "l, d \d\e F \d\e Y" %} &mdash;
+      {% if is_technician %}Visão geral do sistema{% else %}Seus chamados{% endif %}
+    </p>
+  </div>
+  <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-2"></i>Novo Chamado
+  </a>
+</div>
+
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#eff6ff">
+          <i class="bi bi-ticket-detailed text-primary"></i>
+        </div>
+        <div>
+          <div class="stat-number text-primary">{{ tickets_open }}</div>
+          <div class="text-muted small fw-semibold">Em Aberto</div>
+          <div class="text-muted" style="font-size:11px">{{ tickets_this_week }} esta semana</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#ecfeff">
+          <i class="bi bi-arrow-repeat text-info"></i>
+        </div>
+        <div>
+          <div class="stat-number text-info">{{ tickets_in_progress }}</div>
+          <div class="text-muted small fw-semibold">Em Andamento</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#f0fdf4">
+          <i class="bi bi-check2-circle text-success"></i>
+        </div>
+        <div>
+          <div class="stat-number text-success">{{ tickets_resolved }}</div>
+          <div class="text-muted small fw-semibold">Resolvidos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card stat-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#fff1f2">
+          <i class="bi bi-exclamation-diamond text-danger"></i>
+        </div>
+        <div>
+          <div class="stat-number text-danger">{{ tickets_critical }}</div>
+          <div class="text-muted small fw-semibold">Críticos Abertos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if is_technician %}
+<!-- ASSET STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm bg-dark text-white h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-laptop fs-2 mb-2 d-block opacity-75"></i>
+        <div class="stat-number">{{ assets_total }}</div>
+        <div class="small opacity-75 fw-semibold">Total de Ativos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100" style="background:#f0fdf4">
+      <div class="card-body text-center">
+        <i class="bi bi-check-circle-fill fs-2 mb-2 d-block text-success"></i>
+        <div class="stat-number text-success">{{ assets_active }}</div>
+        <div class="small text-success fw-semibold">Em Uso</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100" style="background:#fffbeb">
+      <div class="card-body text-center">
+        <i class="bi bi-tools fs-2 mb-2 d-block text-warning"></i>
+        <div class="stat-number text-warning">{{ assets_maintenance }}</div>
+        <div class="small text-warning fw-semibold">Em Manutenção</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100" style="background:#f9fafb">
+      <div class="card-body text-center">
+        <i class="bi bi-archive fs-2 mb-2 d-block text-secondary"></i>
+        <div class="stat-number text-secondary">{{ assets_inactive }}</div>
+        <div class="small text-secondary fw-semibold">Inativos</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- CHARTS + RECENT TICKETS -->
+<div class="row g-4 mb-4">
+  {% if is_technician %}
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Chamados por Status</h6>
+        <canvas id="statusChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Chamados por Prioridade</h6>
+        <canvas id="priorityChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-1">Top Técnicos</h6>
+        <p class="text-muted small mb-3">Por chamados resolvidos</p>
+        {% if top_technicians %}
+        {% for tech in top_technicians %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center"
+            style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#4f8ef7,#7b5ce5);color:white;font-weight:700;flex-shrink:0">
+            {{ tech.first_name|first|upper }}{{ tech.last_name|first|upper }}
+          </div>
+          <div class="flex-grow-1">
+            <div class="small fw-semibold">{{ tech.get_full_name|default:tech.username }}</div>
+            <div class="progress" style="height:4px">
+              <div class="progress-bar bg-primary" style="width:{{ tech.resolved_count }}0%"></div>
+            </div>
+          </div>
+          <span class="badge bg-success-subtle text-success small">{{ tech.resolved_count }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state py-3">
+          <i class="bi bi-people" style="font-size:2rem"></i>
+          <p class="small">Nenhum dado disponível</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Meus Chamados por Status</h6>
+        <canvas id="statusChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Meus Chamados por Prioridade</h6>
+        <canvas id="priorityChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- RECENT TICKETS -->
+<div class="row g-4">
+  <div class="col-{% if is_technician %}md-8{% else %}12{% endif %}">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-bold mb-0">Chamados Recentes</h6>
+          <a href="{% url 'tickets:list' %}" class="btn btn-outline-primary btn-sm">Ver todos</a>
+        </div>
+        {% if recent_tickets %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Título</th>
+                <th>Prioridade</th>
+                <th>Status</th>
+                <th>Aberto em</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ticket in recent_tickets %}
+              <tr class="ticket-row priority-{{ ticket.priority }}" data-href="{% url 'tickets:detail' ticket.pk %}">
+                <td class="text-muted small">#{{ ticket.pk }}</td>
+                <td>
+                  <div class="fw-semibold small">{{ ticket.title|truncatechars:45 }}</div>
+                  <div class="text-muted" style="font-size:11px">{{ ticket.get_category_display }}</div>
+                </td>
+                <td>
+                  <span class="badge badge-priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-{{ ticket.get_status_badge }}-subtle text-{{ ticket.get_status_badge }}">
+                    {{ ticket.get_status_display }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ ticket.created_at|date:"d/m/y H:i" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-ticket"></i>
+          <p>Nenhum chamado encontrado</p>
+          <a href="{% url 'tickets:create' %}" class="btn btn-primary btn-sm">Abrir Primeiro Chamado</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if is_technician %}
+  <div class="col-md-4">
+    {% if expiring_warranties %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Garantias a Vencer</h6>
+        {% for asset in expiring_warranties %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="small fw-semibold">{{ asset.name|truncatechars:25 }}</div>
+            <div class="text-muted" style="font-size:11px">{{ asset.brand }}</div>
+          </div>
+          <div class="text-end">
+            <div class="small text-warning fw-semibold">{{ asset.warranty_until|date:"d/m/Y" }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-bold mb-0">Manutenções Recentes</h6>
+          <a href="{% url 'assets:list' %}" class="btn btn-outline-secondary btn-sm">Ver ativos</a>
+        </div>
+        {% if recent_maintenance %}
+        {% for m in recent_maintenance %}
+        <div class="d-flex gap-2 py-2 border-bottom">
+          <div class="stat-icon flex-shrink-0"
+            style="width:36px;height:36px;border-radius:8px;background:#f3f4f6;font-size:15px">
+            <i class="bi bi-tools text-secondary"></i>
+          </div>
+          <div>
+            <div class="small fw-semibold">{{ m.asset.name|truncatechars:25 }}</div>
+            <div class="text-muted" style="font-size:11px">{{ m.get_maintenance_type_display }} — {{
+              m.get_status_display }}</div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state py-3">
+          <i class="bi bi-tools" style="font-size:2rem"></i>
+          <p class="small">Sem registros recentes</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const statusData = {{ tickets_by_status| safe }};
+  const priorityData = {{ tickets_by_priority| safe }};
+
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Aberto', 'Em Andamento', 'Aguardando', 'Resolvido', 'Fechado'],
+      datasets: [{
+        data: [statusData.open, statusData.in_progress, statusData.waiting, statusData.resolved, statusData.closed],
+        backgroundColor: ['#0d6efd', '#0dcaf0', '#ffc107', '#198754', '#6c757d'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } } }
+    }
+  });
+
+  new Chart(document.getElementById('priorityChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Baixa', 'Média', 'Alta', 'Crítica'],
+      datasets: [{
+        data: [priorityData.low, priorityData.medium, priorityData.high, priorityData.critical],
+        backgroundColor: ['#198754', '#ffc107', '#dc3545', '#212529'],
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+</script>
+{% endblock %}

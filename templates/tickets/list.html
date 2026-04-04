@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Chamados{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Chamados</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h1 class="page-title mb-1">Chamados</h1>
+    <p class="text-muted small mb-0">{{ total_count }} chamado{{ total_count|pluralize }} encontrado{{ total_count|pluralize }}</p>
+  </div>
+  <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-2"></i>Novo Chamado
+  </a>
+</div>
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        {{ filter_form.search }}
+      </div>
+      <div class="col-md-2">
+        {{ filter_form.status }}
+      </div>
+      <div class="col-md-2">
+        {{ filter_form.priority }}
+      </div>
+      <div class="col-md-2">
+        {{ filter_form.category }}
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-fill">
+          <i class="bi bi-search me-1"></i>Filtrar
+        </button>
+        <a href="{% url 'tickets:list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if tickets %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Título</th>
+            <th>Categoria</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            {% if is_technician %}<th>Solicitante</th><th>Atribuído a</th>{% endif %}
+            <th>Criado em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ticket in tickets %}
+          <tr class="ticket-row priority-{{ ticket.priority }}" data-href="{% url 'tickets:detail' ticket.pk %}">
+            <td class="ps-4 text-muted small fw-semibold">#{{ ticket.pk }}</td>
+            <td>
+              <div class="fw-semibold">{{ ticket.title|truncatechars:50 }}</div>
+              {% if ticket.is_overdue %}
+                <span class="badge bg-danger-subtle text-danger" style="font-size:10px">
+                  <i class="bi bi-alarm me-1"></i>Atrasado
+                </span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ ticket.get_category_display }}</td>
+            <td>
+              <span class="badge badge-priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+            </td>
+            <td>
+              <span class="badge bg-{{ ticket.get_status_badge }}-subtle text-{{ ticket.get_status_badge }}">
+                {{ ticket.get_status_display }}
+              </span>
+            </td>
+            {% if is_technician %}
+            <td class="small">{{ ticket.created_by.get_full_name|default:ticket.created_by.username }}</td>
+            <td class="small">
+              {% if ticket.assigned_to %}
+                <span class="badge bg-light text-dark border">
+                  <i class="bi bi-person me-1"></i>{{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}
+                </span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            {% endif %}
+            <td class="small text-muted">{{ ticket.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+              <a href="{% url 'tickets:detail' ticket.pk %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    {% if tickets.has_other_pages %}
+    <div class="d-flex justify-content-center py-3">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if tickets.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ tickets.previous_page_number }}">
+                <i class="bi bi-chevron-left"></i>
+              </a>
+            </li>
+          {% endif %}
+          {% for num in tickets.paginator.page_range %}
+            <li class="page-item {% if tickets.number == num %}active{% endif %}">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% endfor %}
+          {% if tickets.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ tickets.next_page_number }}">
+                <i class="bi bi-chevron-right"></i>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state py-5">
+      <i class="bi bi-ticket"></i>
+      <h5 class="text-muted">Nenhum chamado encontrado</h5>
+      <p class="text-muted small">Tente ajustar os filtros ou abra um novo chamado</p>
+      <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Abrir Chamado
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

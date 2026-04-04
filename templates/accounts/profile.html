@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Meu Perfil{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Meu Perfil</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4 gap-3">
+  <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center"
+       style="width:56px;height:56px;font-size:20px;background:linear-gradient(135deg,#4f8ef7,#7b5ce5);color:white;font-weight:700">
+    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+  </div>
+  <div>
+    <h1 class="page-title mb-0">{{ user.get_full_name|default:user.username }}</h1>
+    <span class="badge bg-primary-subtle text-primary">{{ user.profile.get_role_display }}</span>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-person me-2"></i>Dados Pessoais</div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ user_form.first_name.label }}</label>
+          {{ user_form.first_name }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ user_form.last_name.label }}</label>
+          {{ user_form.last_name }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ user_form.email.label }}</label>
+          {{ user_form.email }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-section">
+        <div class="form-section-title"><i class="bi bi-building me-2"></i>Informações Corporativas</div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ profile_form.department.label }}</label>
+          {{ profile_form.department }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ profile_form.employee_id.label }}</label>
+          {{ profile_form.employee_id }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ profile_form.phone.label }}</label>
+          {{ profile_form.phone }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">{{ profile_form.bio.label }}</label>
+          {{ profile_form.bio }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-floppy me-2"></i>Salvar Alterações
+    </button>
+    <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

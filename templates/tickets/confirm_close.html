@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Encerrar Chamado{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center p-5">
+        <div class="mb-4">
+          <i class="bi bi-x-circle text-danger" style="font-size:3rem"></i>
+        </div>
+        <h4 class="fw-bold">Encerrar Chamado</h4>
+        <p class="text-muted mb-1">Você está prestes a encerrar o chamado:</p>
+        <p class="fw-semibold mb-4">#{{ ticket.pk }} — {{ ticket.title }}</p>
+        <div class="d-flex gap-3 justify-content-center">
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger px-4">
+              <i class="bi bi-check2 me-2"></i>Confirmar Encerramento
+            </button>
+          </form>
+          <a href="{% url 'tickets:detail' ticket.pk %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
