@@ -133,22 +133,6 @@ python setup_demo.py
 python manage.py runserver
 ```
 
-**7. Acesse no navegador**
-```
-http://127.0.0.1:8000
-```
-
----
-
-## Credenciais de Demonstração
-
-| Perfil | Usuário | Senha | Acesso |
-|---|---|---|---|
-| Administrador | `admin` | `admin123` | Visão completa + Django Admin |
-| Técnico | `tecnico` | `tecnico123` | Gestão de chamados e ativos |
-| Usuário Final | `usuario` | `usuario123` | Abertura e acompanhamento de chamados |
-
----
 
 ## Dados de Demonstração
 
@@ -192,10 +176,6 @@ O script `setup_demo.py` cria automaticamente:
 
 ---
 
-## Licença
 
-Este projeto é de uso livre para fins educacionais e de portfólio.
 
----
-
-Desenvolvido por **[Seu Nome]** — [LinkedIn](https://linkedin.com) | [GitHub](https://github.com)
+Desenvolvido por **[Daniel Luiz]** — [LinkedIn](https://linkedin.com) | [GitHub](https://github.com)
