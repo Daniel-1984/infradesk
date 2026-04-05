@@ -15,4 +15,5 @@ urlpatterns = [
     path('dashboard/', include('dashboard.urls')),
     path('tickets/', include('tickets.urls')),
     path('assets/', include('assets.urls')),
+    path('diagnostics/', include('diagnostics.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

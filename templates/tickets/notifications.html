@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Notificações{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Notificações</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h1 class="page-title mb-1">Notificações</h1>
+    <p class="text-muted small mb-0">{{ notifications|length }} notificação{{ notifications|length|pluralize:",ões" }}</p>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% if notifications %}
+    <div class="list-group list-group-flush">
+      {% for notif in notifications %}
+      <a href="{% url 'tickets:detail' notif.ticket.pk %}"
+         class="list-group-item list-group-item-action px-4 py-3 {% if not notif.is_read %}bg-primary bg-opacity-10{% endif %}">
+        <div class="d-flex align-items-start gap-3">
+          <div class="mt-1">
+            <i class="bi {{ notif.get_icon }} fs-5 text-primary"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="small fw-semibold">{{ notif.message }}</div>
+            <div class="text-muted" style="font-size:11px">
+              Chamado #{{ notif.ticket.pk }} &mdash; {{ notif.created_at|date:"d/m/Y \à\s H:i" }}
+            </div>
+          </div>
+          {% if not notif.is_read %}
+          <span class="badge bg-primary rounded-pill" style="font-size:9px">nova</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-bell-slash d-block fs-1 mb-3 opacity-25"></i>
+      <p class="fw-semibold mb-1">Sem notificações</p>
+      <p class="small">Você será notificado sobre atribuições, comentários e mudanças de status.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -28,6 +28,11 @@
                 <i class="bi bi-alarm me-1"></i>Atrasado
               </span>
               {% endif %}
+              {% if ticket.sla_breached %}
+              <span class="badge bg-warning text-dark px-3 py-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>SLA Violado
+              </span>
+              {% endif %}
             </div>
           </div>
           {% if is_technician or ticket.created_by == request.user %}
@@ -54,6 +59,11 @@
         </div>
       </div>
     </div>
+
+    <!-- DIAGNÓSTICO INTELIGENTE (Technician only) -->
+    {% if is_technician and diagnostic %}
+    {% include 'diagnostics/_diagnostic_block.html' with ticket=ticket diagnostic=diagnostic %}
+    {% endif %}
 
     <!-- ADMIN PANEL (Technician only) -->
     {% if is_technician %}
@@ -94,30 +104,51 @@
     </div>
     {% endif %}
 
-    <!-- COMMENTS -->
+    <!-- TIMELINE: COMENTÁRIOS + HISTÓRICO -->
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body">
         <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text me-2"></i>Histórico do Chamado</h6>
 
-        {% if comments %}
-          <div class="d-flex flex-column gap-3 mb-4">
-            {% for comment in comments %}
-            <div class="comment-item {% if comment.is_internal %}internal{% else %}public{% endif %}">
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:28px;height:28px;font-size:10px;background:linear-gradient(135deg,#4f8ef7,#7b5ce5);color:white;font-weight:700;flex-shrink:0">
-                  {{ comment.author.first_name|first|upper }}{{ comment.author.last_name|first|upper }}
+        {% if timeline %}
+          <div class="d-flex flex-column gap-2 mb-4">
+            {% for item in timeline %}
+              {% if item.type == 'comment' %}
+              <div class="comment-item {% if item.obj.is_internal %}internal{% else %}public{% endif %}">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center"
+                       style="width:28px;height:28px;font-size:10px;background:linear-gradient(135deg,#4f8ef7,#7b5ce5);color:white;font-weight:700;flex-shrink:0">
+                    {{ item.obj.author.first_name|first|upper }}{{ item.obj.author.last_name|first|upper }}
+                  </div>
+                  <span class="fw-semibold small">{{ item.obj.author.get_full_name|default:item.obj.author.username }}</span>
+                  <span class="text-muted small">{{ item.obj.created_at|date:"d/m/Y \à\s H:i" }}</span>
+                  {% if item.obj.is_internal %}
+                    <span class="badge bg-warning-subtle text-warning border ms-auto" style="font-size:10px">
+                      <i class="bi bi-lock me-1"></i>Nota Interna
+                    </span>
+                  {% endif %}
                 </div>
-                <span class="fw-semibold small">{{ comment.author.get_full_name|default:comment.author.username }}</span>
-                <span class="text-muted small">{{ comment.created_at|date:"d/m/Y \à\s H:i" }}</span>
-                {% if comment.is_internal %}
-                  <span class="badge bg-warning-subtle text-warning border ms-auto" style="font-size:10px">
-                    <i class="bi bi-lock me-1"></i>Nota Interna
-                  </span>
-                {% endif %}
+                <p class="mb-0 small" style="white-space:pre-line">{{ item.obj.content }}</p>
               </div>
-              <p class="mb-0 small" style="white-space:pre-line">{{ comment.content }}</p>
-            </div>
+              {% else %}
+              <div class="d-flex align-items-center gap-2 py-1" style="font-size:12px;color:#6c757d">
+                <i class="bi bi-clock-history flex-shrink-0"></i>
+                <span>
+                  <strong>{{ item.obj.changed_by.get_full_name|default:item.obj.changed_by.username }}</strong>
+                  {% if item.obj.field_changed == 'comment_added' %}
+                    adicionou um comentário
+                  {% elif item.obj.field_changed == 'ticket_created' %}
+                    criou este chamado
+                  {% elif item.obj.field_changed == 'attachment_added' %}
+                    anexou <strong>{{ item.obj.new_value }}</strong>
+                  {% else %}
+                    alterou <strong>{{ item.obj.get_field_label }}</strong>
+                    {% if item.obj.old_value %}de <em>{{ item.obj.old_value }}</em>{% endif %}
+                    para <strong>{{ item.obj.new_value }}</strong>
+                  {% endif %}
+                </span>
+                <span class="ms-auto text-nowrap">{{ item.obj.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              {% endif %}
             {% endfor %}
           </div>
         {% else %}
@@ -143,6 +174,52 @@
             <i class="bi bi-send me-2"></i>Enviar
           </button>
         </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ANEXOS -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-paperclip me-2"></i>Anexos</h6>
+
+        {% if attachments %}
+        <div class="d-flex flex-column gap-2 mb-3">
+          {% for att in attachments %}
+          <div class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light">
+            <i class="bi bi-file-earmark text-secondary fs-5 flex-shrink-0"></i>
+            <div class="flex-grow-1 min-width-0">
+              <a href="{{ att.file.url }}" target="_blank" class="small fw-semibold text-decoration-none">
+                {{ att.filename }}
+              </a>
+              <div class="text-muted" style="font-size:11px">
+                {{ att.uploaded_by.get_full_name|default:att.uploaded_by.username }}
+                &mdash; {{ att.uploaded_at|date:"d/m/Y H:i" }}
+              </div>
+            </div>
+            <a href="{{ att.file.url }}" download class="btn btn-outline-secondary btn-sm py-0 px-2" title="Baixar">
+              <i class="bi bi-download"></i>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if ticket.status != 'closed' %}
+        <form method="post" enctype="multipart/form-data" class="{% if attachments %}border-top pt-3{% endif %}">
+          {% csrf_token %}
+          <label class="form-label small fw-semibold">Adicionar Arquivo</label>
+          {{ attachment_form.file }}
+          <div class="mt-2">
+            <button type="submit" name="submit_attachment" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-upload me-2"></i>Enviar Arquivo
+            </button>
+          </div>
+        </form>
+        {% endif %}
+
+        {% if not attachments and ticket.status == 'closed' %}
+        <p class="text-muted small mb-0">Nenhum arquivo anexado.</p>
         {% endif %}
       </div>
     </div>
@@ -181,6 +258,19 @@
           </span>
         </div>
         {% endif %}
+
+        <!-- SLA INFO -->
+        <div class="d-flex justify-content-between py-2 {% if ticket.resolved_at %}border-bottom{% endif %}">
+          <span class="small text-muted">SLA ({{ ticket.get_priority_display }})</span>
+          <span class="small {% if ticket.sla_breached %}text-danger fw-bold{% else %}text-success{% endif %}">
+            {% if ticket.sla_breached %}
+              <i class="bi bi-exclamation-triangle me-1"></i>Violado
+            {% else %}
+              <i class="bi bi-check-circle me-1"></i>OK
+            {% endif %}
+          </span>
+        </div>
+
         {% if ticket.resolved_at %}
         <div class="d-flex justify-content-between py-2">
           <span class="small text-muted">Resolvido em</span>

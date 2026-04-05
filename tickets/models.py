@@ -1,6 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
+
+
+SLA_HOURS = {
+    'critical': 4,
+    'high': 8,
+    'medium': 24,
+    'low': 72,
+}
 
 
 class Ticket(models.Model):
@@ -69,7 +78,20 @@ class Ticket(models.Model):
             self.resolved_at = timezone.now()
         elif self.status != 'resolved':
             self.resolved_at = None
+
+        # SLA auto-check: marca violação se passou do limite por prioridade
+        if self.pk and self.created_at and self.status not in ('resolved', 'closed'):
+            limit = self.created_at + timedelta(hours=SLA_HOURS.get(self.priority, 24))
+            if timezone.now() > limit:
+                self.sla_breached = True
+
         super().save(*args, **kwargs)
+
+    def get_sla_deadline(self):
+        """Retorna o datetime limite de SLA baseado na prioridade."""
+        if self.created_at:
+            return self.created_at + timedelta(hours=SLA_HOURS.get(self.priority, 24))
+        return None
 
     def get_priority_badge(self):
         badges = {
@@ -141,3 +163,87 @@ class TicketAttachment(models.Model):
 
     def __str__(self):
         return self.filename
+
+
+class TicketHistory(models.Model):
+    """Registro de todas as alterações feitas em um chamado."""
+
+    FIELD_LABELS = {
+        'status': 'Status',
+        'priority': 'Prioridade',
+        'assigned_to': 'Atribuído a',
+        'asset': 'Equipamento',
+        'due_date': 'Prazo',
+        'comment_added': 'Comentário adicionado',
+        'ticket_created': 'Chamado criado',
+        'attachment_added': 'Anexo adicionado',
+    }
+
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.CASCADE,
+        related_name='history',
+        verbose_name='Chamado'
+    )
+    changed_by = models.ForeignKey(
+        User, on_delete=models.PROTECT,
+        verbose_name='Alterado por'
+    )
+    field_changed = models.CharField('Campo Alterado', max_length=50)
+    old_value = models.CharField('Valor Anterior', max_length=500, blank=True)
+    new_value = models.CharField('Novo Valor', max_length=500, blank=True)
+    created_at = models.DateTimeField('Registrado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Histórico'
+        verbose_name_plural = 'Histórico de Alterações'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'#{self.ticket.pk} — {self.field_changed} por {self.changed_by.username}'
+
+    def get_field_label(self):
+        return self.FIELD_LABELS.get(self.field_changed, self.field_changed)
+
+
+class Notification(models.Model):
+    """Notificações internas para usuários sobre eventos nos chamados."""
+
+    TYPE_CHOICES = [
+        ('assigned', 'Chamado Atribuído'),
+        ('comment', 'Novo Comentário'),
+        ('status_change', 'Status Alterado'),
+        ('sla_breach', 'SLA Violado'),
+    ]
+
+    TYPE_ICONS = {
+        'assigned': 'bi-person-check',
+        'comment': 'bi-chat-left-text',
+        'status_change': 'bi-arrow-repeat',
+        'sla_breach': 'bi-exclamation-triangle',
+    }
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name='Usuário'
+    )
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name='Chamado'
+    )
+    type = models.CharField('Tipo', max_length=20, choices=TYPE_CHOICES)
+    message = models.CharField('Mensagem', max_length=300)
+    is_read = models.BooleanField('Lida', default=False)
+    created_at = models.DateTimeField('Criada em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Notificação'
+        verbose_name_plural = 'Notificações'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'[{self.type}] {self.user.username}: {self.message[:50]}'
+
+    def get_icon(self):
+        return self.TYPE_ICONS.get(self.type, 'bi-bell')

@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% block title %}Diagnóstico #{{ ticket.pk }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'tickets:list' %}" class="text-decoration-none">Chamados</a></li>
+<li class="breadcrumb-item"><a href="{% url 'tickets:detail' ticket.pk %}" class="text-decoration-none">#{{ ticket.pk }}</a></li>
+<li class="breadcrumb-item active">Diagnóstico</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- HEADER -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h1 class="page-title mb-1">
+      <i class="bi bi-cpu me-2 text-primary"></i>Motor de Diagnóstico
+    </h1>
+    <p class="text-muted small mb-0">
+      Chamado <strong>#{{ ticket.pk }}</strong> &mdash; {{ ticket.title|truncatechars:60 }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'tickets:detail' ticket.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+    <form method="post" action="{% url 'diagnostics:regenerate' ticket.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-arrow-clockwise me-1"></i>Reanalisar
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- COLUNA PRINCIPAL -->
+  <div class="col-lg-8">
+
+    <!-- RESULTADO PRINCIPAL -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="stat-icon" style="background:#eff6ff;width:56px;height:56px;font-size:24px">
+            <i class="bi bi-cpu text-primary"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-1">Resultado do Diagnóstico</h5>
+            <p class="text-muted small mb-0">
+              Gerado em {{ diagnostic.generated_at|date:"d/m/Y H:i" }}
+            </p>
+          </div>
+          <!-- CONFIANÇA -->
+          <div class="ms-auto text-center">
+            <div class="fw-bold fs-3
+              {% if diagnostic.confidence == 'high' %}text-success
+              {% elif diagnostic.confidence == 'medium' %}text-warning
+              {% else %}text-secondary{% endif %}">
+              {{ diagnostic.confidence_percent }}%
+            </div>
+            <div class="small text-muted">Confiança</div>
+            <div>
+              {% if diagnostic.confidence == 'high' %}
+                <span class="badge bg-success-subtle text-success">Alta</span>
+              {% elif diagnostic.confidence == 'medium' %}
+                <span class="badge bg-warning-subtle text-warning">Média</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary">Baixa</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- LINHA DE MÉTRICAS -->
+        <div class="row g-3 mb-4">
+          <div class="col-4">
+            <div class="p-3 rounded-3 text-center" style="background:#f8f9fa">
+              <div class="fw-bold fs-5 text-primary">{{ diagnostic.domain_detected }}</div>
+              <div class="small text-muted">Domínio Detectado</div>
+              <div class="small text-muted">(score: {{ diagnostic.domain_confidence_score }})</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-3 rounded-3 text-center" style="background:#f8f9fa">
+              <div class="fw-bold fs-5
+                {% if diagnostic.similar_tickets_count >= 3 %}text-warning
+                {% elif diagnostic.similar_tickets_count >= 1 %}text-info
+                {% else %}text-secondary{% endif %}">
+                {{ diagnostic.similar_tickets_count }}
+              </div>
+              <div class="small text-muted">Chamados Similares</div>
+              <div class="small text-muted">nos resolvidos</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-3 rounded-3 text-center" style="background:#f8f9fa">
+              {% if diagnostic.recurrence_level %}
+                <div class="fw-bold fs-5
+                  {% if diagnostic.recurrence_level == 'critical' %}text-danger
+                  {% elif diagnostic.recurrence_level == 'medium' %}text-warning
+                  {% else %}text-info{% endif %}">
+                  {{ diagnostic.recurrence_level|upper }}
+                </div>
+              {% else %}
+                <div class="fw-bold fs-5 text-secondary">—</div>
+              {% endif %}
+              <div class="small text-muted">Reincidência</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REINCIDÊNCIA DETALHADA -->
+        {% if diagnostic.recurrence_level %}
+        <div class="alert
+          {% if diagnostic.recurrence_level == 'critical' %}alert-danger
+          {% elif diagnostic.recurrence_level == 'medium' %}alert-warning
+          {% else %}alert-info{% endif %} mb-4">
+          <div class="fw-semibold mb-1">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Alerta de Reincidência —
+            {% if diagnostic.recurrence_level == 'critical' %}Crítico
+            {% elif diagnostic.recurrence_level == 'medium' %}Moderado
+            {% else %}Leve{% endif %}
+          </div>
+          <div class="small">
+            Ocorrências similares detectadas:
+            <strong>{{ diagnostic.recurrence_count_7d }}</strong> nos últimos 7 dias &nbsp;|&nbsp;
+            <strong>{{ diagnostic.recurrence_count_15d }}</strong> nos últimos 15 dias &nbsp;|&nbsp;
+            <strong>{{ diagnostic.recurrence_count_30d }}</strong> nos últimos 30 dias
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- PLAYBOOK -->
+        {% if diagnostic.playbook_matched %}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-3">
+            <i class="bi bi-book me-2 text-primary"></i>Diagnóstico da Base de Conhecimento
+          </h6>
+
+          <div class="p-3 rounded-3 mb-3" style="background:#f0f9ff;border-left:4px solid #0d6efd">
+            <div class="small fw-semibold text-primary mb-1">Causa Provável</div>
+            <div class="small">{{ diagnostic.playbook_matched.probable_cause }}</div>
+          </div>
+
+          <div class="p-3 rounded-3 mb-3" style="background:#f0fdf4;border-left:4px solid #198754">
+            <div class="small fw-semibold text-success mb-2">Checklist Técnico</div>
+            {% for item in checklist_items %}
+            <div class="d-flex align-items-start gap-2 mb-1">
+              <i class="bi bi-check2-square text-success mt-1" style="font-size:13px;flex-shrink:0"></i>
+              <div class="small">{{ item }}</div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="p-3 rounded-3" style="background:#fffbeb;border-left:4px solid #ffc107">
+            <div class="small fw-semibold text-warning mb-1">Ação Recomendada</div>
+            <div class="small">{{ diagnostic.playbook_matched.recommended_action }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary mb-4">
+          <i class="bi bi-info-circle me-2"></i>
+          Nenhum playbook com correspondência suficiente foi encontrado para este chamado.
+          <span class="text-muted small d-block mt-1">
+            Considere adicionar uma entrada ao playbook após a resolução.
+          </span>
+        </div>
+        {% endif %}
+
+        <!-- NOTAS DO MOTOR -->
+        <details class="mt-3">
+          <summary class="small text-muted" style="cursor:pointer">
+            <i class="bi bi-terminal me-1"></i>Log interno do motor de diagnóstico
+          </summary>
+          <pre class="mt-2 p-3 rounded-3 small"
+               style="background:#1e1e2e;color:#cdd6f4;font-size:11px;white-space:pre-wrap">{{ diagnostic.notes }}</pre>
+        </details>
+
+      </div>
+    </div>
+
+    <!-- CHAMADOS SIMILARES -->
+    {% if similar_tickets %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">
+          <i class="bi bi-diagram-3 me-2 text-info"></i>
+          Chamados Similares Encontrados ({{ diagnostic.similar_tickets_count }})
+        </h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Título</th>
+                <th>Status</th>
+                <th>Prioridade</th>
+                <th>Aberto em</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in similar_tickets %}
+              <tr class="ticket-row" data-href="{% url 'tickets:detail' t.pk %}">
+                <td class="text-muted">#{{ t.pk }}</td>
+                <td>
+                  <div class="fw-semibold">{{ t.title|truncatechars:50 }}</div>
+                  <div class="text-muted">{{ t.get_category_display }}</div>
+                </td>
+                <td>
+                  <span class="badge bg-{{ t.get_status_badge }}-subtle text-{{ t.get_status_badge }}">
+                    {{ t.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-priority-{{ t.priority }}">{{ t.get_priority_display }}</span>
+                </td>
+                <td class="text-muted">{{ t.created_at|date:"d/m/y" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="col-lg-4">
+
+    <!-- RESUMO DO CHAMADO -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-ticket me-2"></i>Chamado Analisado</h6>
+        <dl class="mb-0 small">
+          <dt class="text-muted">Categoria</dt>
+          <dd>{{ ticket.get_category_display }}</dd>
+          <dt class="text-muted">Prioridade</dt>
+          <dd>
+            <span class="badge badge-priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+          </dd>
+          <dt class="text-muted">Status</dt>
+          <dd>
+            <span class="badge bg-{{ ticket.get_status_badge }}-subtle text-{{ ticket.get_status_badge }}">
+              {{ ticket.get_status_display }}
+            </span>
+          </dd>
+          {% if ticket.asset %}
+          <dt class="text-muted">Equipamento</dt>
+          <dd>{{ ticket.asset.name }}</dd>
+          {% endif %}
+          {% if ticket.created_by.profile.department %}
+          <dt class="text-muted">Setor</dt>
+          <dd>{{ ticket.created_by.profile.department.name }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <!-- GUIA DE CONFIANÇA -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-secondary"></i>Como ler a confiança</h6>
+        <div class="small text-muted">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-success">70–95%</span>
+            <span>Evidências sólidas — alta probabilidade</span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-warning text-dark">40–69%</span>
+            <span>Indícios parciais — validar com técnico</span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-secondary">0–39%</span>
+            <span>Pouco histórico — use o playbook como guia</span>
+          </div>
+          <hr>
+          <div class="text-muted" style="font-size:10px">
+            A confiança nunca chega a 100% — o técnico sempre valida o diagnóstico final.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LINK ALERTAS -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center">
+        <i class="bi bi-bell-fill text-warning fs-3 mb-2 d-block"></i>
+        <div class="small fw-semibold mb-2">Alertas de Reincidência</div>
+        <a href="{% url 'diagnostics:alerts' %}" class="btn btn-outline-warning btn-sm">
+          Ver todos os alertas
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

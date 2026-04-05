@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Ticket, TicketComment
+from .models import Ticket, TicketComment, TicketAttachment
 
 
 class TicketForm(forms.ModelForm):
@@ -93,6 +93,16 @@ class TicketCommentForm(forms.ModelForm):
             'content': 'Comentário',
             'is_internal': 'Nota interna (visível apenas para técnicos)',
         }
+
+
+class TicketAttachmentForm(forms.ModelForm):
+    class Meta:
+        model = TicketAttachment
+        fields = ['file']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control form-control-sm'})
+        }
+        labels = {'file': 'Selecione o arquivo'}
 
 
 class TicketFilterForm(forms.Form):

@@ -100,6 +100,16 @@
           <i class="bi bi-plus-lg me-1"></i> Abrir Chamado
         </a>
 
+        <a href="{% url 'tickets:notifications' %}" class="position-relative text-secondary" style="font-size:1.2rem;line-height:1" title="Notificações">
+          <i class="bi bi-bell"></i>
+          {% if unread_notifications_count %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                style="font-size:9px;padding:3px 5px">
+            {{ unread_notifications_count }}
+          </span>
+          {% endif %}
+        </a>
+
         <div class="dropdown">
           <button class="btn btn-link text-dark p-0 d-flex align-items-center gap-2 text-decoration-none" data-bs-toggle="dropdown">
             <div class="avatar-sm">

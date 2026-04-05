@@ -1,0 +1,93 @@
+{% comment %}
+Bloco "Diagnóstico Inteligente" para incluir em tickets/detail.html.
+Uso: {% include 'diagnostics/_diagnostic_block.html' with ticket=ticket diagnostic=diagnostic %}
+{% endcomment %}
+
+{% if diagnostic %}
+<div class="card border-0 shadow-sm mb-4" style="border-left:4px solid #4f8ef7 !important">
+  <div class="card-body">
+
+    <!-- Header do bloco -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="fw-bold mb-0">
+        <i class="bi bi-cpu me-2 text-primary"></i>Diagnóstico Inteligente
+      </h6>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Badge de confiança -->
+        <span class="badge
+          {% if diagnostic.confidence == 'high' %}bg-success
+          {% elif diagnostic.confidence == 'medium' %}bg-warning text-dark
+          {% else %}bg-secondary{% endif %}">
+          {{ diagnostic.confidence_percent }}% confiança
+        </span>
+        <a href="{% url 'diagnostics:panel' ticket.pk %}" class="btn btn-outline-primary btn-sm">
+          Ver completo
+        </a>
+      </div>
+    </div>
+
+    <!-- Linha de resumo -->
+    <div class="row g-2 mb-3">
+      <div class="col-auto">
+        <div class="p-2 rounded-2 text-center" style="background:#eff6ff;min-width:90px">
+          <div class="small fw-bold text-primary" style="font-size:11px">{{ diagnostic.domain_detected }}</div>
+          <div class="text-muted" style="font-size:10px">Domínio</div>
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="p-2 rounded-2 text-center" style="background:#f0fdf4;min-width:70px">
+          <div class="small fw-bold text-success">{{ diagnostic.similar_tickets_count }}</div>
+          <div class="text-muted" style="font-size:10px">Similares</div>
+        </div>
+      </div>
+      {% if diagnostic.recurrence_level %}
+      <div class="col-auto">
+        <div class="p-2 rounded-2 text-center
+          {% if diagnostic.recurrence_level == 'critical' %}bg-danger bg-opacity-10
+          {% elif diagnostic.recurrence_level == 'medium' %}bg-warning bg-opacity-10
+          {% else %}bg-info bg-opacity-10{% endif %}"
+          style="min-width:90px">
+          <div class="small fw-bold
+            {% if diagnostic.recurrence_level == 'critical' %}text-danger
+            {% elif diagnostic.recurrence_level == 'medium' %}text-warning
+            {% else %}text-info{% endif %}">
+            {{ diagnostic.recurrence_level|upper }}
+          </div>
+          <div class="text-muted" style="font-size:10px">Reincidência</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Playbook resumido -->
+    {% if diagnostic.playbook_matched %}
+    <div class="p-2 rounded-2 mb-2" style="background:#f8f9fa;font-size:12px">
+      <span class="fw-semibold text-muted">Causa provável:</span>
+      {{ diagnostic.playbook_matched.probable_cause|truncatechars:120 }}
+    </div>
+    {% endif %}
+
+    <!-- Alerta de reincidência inline -->
+    {% if diagnostic.recurrence_level == 'critical' %}
+    <div class="alert alert-danger py-1 px-3 mb-0 small">
+      <i class="bi bi-exclamation-octagon me-1"></i>
+      <strong>Reincidência crítica:</strong>
+      {{ diagnostic.recurrence_count_30d }}x nos últimos 30 dias
+      (7d: {{ diagnostic.recurrence_count_7d }} | 15d: {{ diagnostic.recurrence_count_15d }})
+    </div>
+    {% elif diagnostic.recurrence_level == 'medium' %}
+    <div class="alert alert-warning py-1 px-3 mb-0 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      <strong>Reincidência moderada:</strong>
+      {{ diagnostic.recurrence_count_30d }}x nos últimos 30 dias
+    </div>
+    {% elif diagnostic.recurrence_level == 'light' %}
+    <div class="alert alert-info py-1 px-3 mb-0 small">
+      <i class="bi bi-info-circle me-1"></i>
+      Reincidência leve: {{ diagnostic.recurrence_count_30d }}x nos últimos 30 dias
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endif %}

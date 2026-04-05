@@ -6,6 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from tickets.models import Ticket
 from assets.models import Asset, MaintenanceRecord
+from diagnostics.models import RecurrenceAlert
 
 
 @login_required
@@ -70,6 +71,11 @@ def dashboard_index(request):
             status__in=['active', 'available']
         ).order_by('warranty_until')[:5]
 
+        # Alertas de reincidência ativos
+        recurrence_alerts = RecurrenceAlert.objects.filter(
+            is_resolved=False
+        ).order_by('-level', '-occurrences')[:5]
+
         # Top técnicos
         top_technicians = User.objects.filter(
             tickets_assigned__status='resolved'
@@ -78,6 +84,7 @@ def dashboard_index(request):
         ).order_by('-resolved_count')[:5]
     else:
         top_technicians = []
+        recurrence_alerts = []
 
     context = {
         'is_technician': is_technician,
@@ -98,5 +105,6 @@ def dashboard_index(request):
         'recent_maintenance': recent_maintenance,
         'expiring_warranties': expiring_warranties,
         'top_technicians': top_technicians,
+        'recurrence_alerts': recurrence_alerts,
     }
     return render(request, 'dashboard/index.html', context)
