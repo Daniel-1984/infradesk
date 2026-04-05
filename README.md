@@ -1,3 +1,16 @@
+<img width="577" height="701" alt="image" src="https://github.com/user-attachments/assets/fa2c5916-e527-40ae-b19f-c4b3034e4af5" />
+<img width="1901" height="930" alt="image" src="https://github.com/user-attachments/assets/5310523f-056a-46cf-b34b-06932cf518ec" />
+<img width="1873" height="881" alt="image" src="https://github.com/user-attachments/assets/479fc18e-d497-476c-938d-3a12de2f3e04" />
+<img width="1914" height="778" alt="image" src="https://github.com/user-attachments/assets/a3f5ad95-f954-471f-8b91-bfa7a9982945" />
+<img width="1917" height="896" alt="image" src="https://github.com/user-attachments/assets/f14038e9-1bc5-48ad-86a8-23432a58bc65" />
+<img width="1072" height="877" alt="image" src="https://github.com/user-attachments/assets/c2692c98-8917-4e3c-b9ab-252c74ac2883" />
+<img width="1888" height="858" alt="image" src="https://github.com/user-attachments/assets/d8537477-b6fb-41cd-92f6-1f7ec30d38d0" />
+
+
+
+
+
+
 # InfraDesk
 
 > Sistema web corporativo de suporte técnico e gestão de ativos de TI, desenvolvido com Django 5, Bootstrap 5 e SQLite.
@@ -179,3 +192,4 @@ O script `setup_demo.py` cria automaticamente:
 
 
 Desenvolvido por **[Daniel Luiz]** — [LinkedIn](https://linkedin.com) | [GitHub](https://github.com)
+
